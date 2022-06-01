@@ -9,3 +9,6 @@ No arquivo .qmd você pode ver como foi escrito e padronizado para o formato que
 Podem sugerir melhorias para eu implementar.
 
 Lembrando que o foco deste projeto é apenas a utilização do Quarto, não a metodologia em si.
+
+Obs: As referências precisam ser melhoradas, algumas fugiram do padrão e o texto do código passou o limite da página.
+Vou acertar isso.
