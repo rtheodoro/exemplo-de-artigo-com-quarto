@@ -1,0 +1,273 @@
+---
+title: "Identificando cooperativas de crédito auditadas por Big Four"
+subtitle: "Procedimentos metodológicos"
+author:
+  - name: Ricardo Theodoro nUSP 10.191.222
+    url: https://rtheodoro.com
+    affiliation: Universidade de São Paulo
+format: 
+   pdf:
+      documentclass: article
+      papersize: letter
+      mainfont: Times New Roman
+      geometry:
+        - top=30mm
+        - left=20mm
+        - heightrounded
+      code-fold: true
+      highlight-style: zenburn
+      link-citations: true
+header-includes:
+  - \setlength{\parindent}{3mm}
+  - \setlength{\parskip}{1mm}
+bibliography: references.bib
+editor: visual
+lang: pt
+---
+
+## Introdução
+
+Uma cooperativa, na definição de @barton1983, é uma empresa pertencente e controlada pelo usuário que distribui benefícios com base no uso. Fundamentado nesse conceito, são extraídos três aspectos característicos desta organização: primeiro, as pessoas que possuem e financiam a cooperativa são aqueles que a utilizam; segundo, o controle da cooperativa é feito pela escolha de quem utiliza a cooperativa; terceiro, os benefícios oferecidos para o usuário, revelam-se como negócio a custo.
+
+Essa característica de controle pelos usuários se relacionam com o princípio da gestão democrática, garantindo que o controle da cooperativa seja dos seus próprios membros, sendo que para essa forma de gestão ocorrer, os associados elegem representantes, também associados, que os representam na administração da sociedade [@schaefer2022]. Assim, verifica-se uma relação de agência, compreendida como um contrato sob o qual uma ou mais pessoas, definidas como principais, emprega outra pessoa (agente), para executar em seu nome um serviço que implique a delegação de algum poder de decisão do agente [@jensen1976].
+
+Nesta relação da agência, os interesses do principal e do agente podem divergir, assim no intuito de manter os interesses alinhados, as partes irão incorrer em custos de agência, que são a soma: das despesas de monitoramento por parte do principal; das despesas com a concessão de garantias contratuais por parte do agente; e do custo residual [@jensen1976]. Dentre as despesas de monitoramento a serem assumidas pelo principal, está a auditoria independente, que tem como atribuição básica verificar se as demonstrações financeiras refletem, em todos os aspectos relevantes, a posição econômica e financeira da cooperativa, assim como a revisão e avaliação dos controles internos [@schaefer2022]. Ainda, concentrando o mercado de atuação da auditoria independente, tem-se as chamadas *Big Four* (Deloitte; Ernst & Young; KPMG e PwC).
+
+Sabe-se que, a efetividade da auditoria como um instrumento de monitoramento é comprovada por estudo, como @le2020, que ao documentarem o papel que a auditoria desempenha na conformidade das demonstrações financeiras.
+
+Desse modo, busca-se responder a questão: quais características das cooperativas de crédito brasileiras influenciam na opção de contratarem uma *Big Four*?
+
+Como justificativa, tem-se a incipiente discussão sobre o mercado de auditoria independente atuante em cooperativas de crédito, sobretudo na identificação de concentração do mercado em *Big Four*, que tem merecido cada vez mais a atenção, não permitindo mais negligenciá-lo. Ainda, a escolha das cooperativas de crédito está relacionada ao seu grau de importância em promover o crescimento, desenvolvimento econômico e social, sendo as maiores instituições financeiras de varejo no Brasil.
+
+## Procedimentos metodológicos
+
+### Base de dados
+
+Foram selecionadas apenas as cooperativas de crédito singulares que informaram quem eram seus auditores independentes ao Banco Central do Brasil (BACEN) em outubro de 2021, resultando em uma amostra de 365 instituições. Assim, na sequência foram selecionadas contas vindas do balanço contábil que em estudos anteriores foram utilizadas para identificar gerencimanto de resultados, que são: Receitas Operacionais (ROP); Despesas Operacionais (DES); e Perdas Estimadas em Créditos de Liquidação Duvidosa (PECLD). A escolha foi baseada na literatura existente sobre instituições financeiras e em empresas do terceiro setor, uma vez que são passíveis de alterações devido a escolhas do gestor [@theodoro2021].
+
+Também foram selecionadas contas que podem sinalizar o tamanho da cooperativa como Ativo Total e Patrimônio Líquido, visto que podemos pensar que quanto maior a cooperativa, maior sua preocupação com a qualidade dos dados auditados. Além destas, também foi selecionado o número de agências e quantidade de cooperados.
+
+Salienta-se que os dados das contas se referem ao mês de dezembro de 2020, uma vez que o balanço consolidado de dezembro de 2021 ainda não foi disponibilizado pelo BACEN. Ainda foram adicionados dados cadastrais sobre Classe, Critério de Associação e Filiação e Idade, que foi calculada através da data de início de atividade conforme cadastro do CNPJ junto à Receita Federal Brasileira em outubro de 2021, para futura melhoria no modelo.
+
+```{r}
+# Tratamento da base
+coop <- read.csv("data/auditorIndependente_coopcred.csv") |>
+  dplyr::filter(data_coleta == "10/2021" & stringr::str_trim(classe) == "Singular") |>
+  janitor::clean_names() |>
+  dplyr::mutate(
+    ativo_total = stringr::str_replace(ativo_total, ",", "."),
+    ativo_total = as.numeric(ativo_total),
+    patrimonio_liquido = stringr::str_replace(patrimonio_liquido, ",", "."),
+    patrimonio_liquido = as.numeric(patrimonio_liquido),
+    sobras = stringr::str_replace(sobras, ",", "."),
+    sobras = as.numeric(sobras),
+    pecld = stringr::str_replace(pecld, ",", "."),
+    pecld = as.numeric(pecld),
+    receitas_operacionais = stringr::str_replace(receitas_operacionais, ",", "."),
+    receitas_operacionais = as.numeric(receitas_operacionais),
+    despesas_operacionais = stringr::str_replace(despesas_operacionais, ",", "."),
+    despesas_operacionais = as.numeric(despesas_operacionais)
+  ) |>
+  dplyr::select(
+    -data_coleta, -mudou_auditor, -situacao, -uf, -endereco_eletronico,
+    -regiao, -municipio, -classe
+  )
+
+coop[is.na(coop)] <- 0
+```
+
+Com isso, temos a seguinte estatística descritiva para a amostra total selecionada:
+
+```{r}
+library(magrittr)
+
+# Estatistica descritiva
+coop |>
+dplyr::select(
+  idade_em_2022,
+  numero_agencias,
+  total_de_cooperados,
+  ativo_total,
+  patrimonio_liquido,
+  despesas_operacionais,
+  receitas_operacionais,
+  sobras,
+  pecld
+) %>%
+stargazer::stargazer(
+  ... = .,
+  type = "text",
+  title = "Estatistica Descritiva da amostra completa de cooperativas de crédito singulares",
+  style = "aer",
+  decimal.mark = ".",
+  digits = 0
+)
+```
+
+Com estes dados é possível observar que a amostra é composta por cooperativas de crédito com características distintas quanto ao seu tamanho, com alto desvio padrão, tendo coperativas desde muito pequenas até muito grandes para todas as variáveis.
+
+Ainda é possível comparar as esatísticas descritivas separadas pelos grupos, sendo 0 auditadas por empresa comum e 1 auditada por *Big Four*.
+
+```{r}
+coop |>
+dplyr::filter(big_four == 0) |>
+dplyr::select(
+  idade_em_2022,
+  numero_agencias,
+  total_de_cooperados,
+  ativo_total,
+  patrimonio_liquido,
+  despesas_operacionais,
+  receitas_operacionais,
+  sobras,
+  pecld
+) %>%
+stargazer::stargazer(
+  ... = .,
+  type = "text",
+  title = "Estatistica Descritiva da amostra de cooperativas de crédito singulares não auditadas por Big Four",
+  style = "aer",
+  decimal.mark = ".",
+  digits = 0
+)
+
+coop |>
+dplyr::filter(big_four == 1) |>
+dplyr::select(
+  idade_em_2022,
+  numero_agencias,
+  total_de_cooperados,
+  ativo_total,
+  patrimonio_liquido,
+  despesas_operacionais,
+  receitas_operacionais,
+  sobras,
+  pecld
+) %>%
+stargazer::stargazer(
+  ... = .,
+  type = "text",
+  title = "Estatistica Descritiva da amostra de cooperativas de crédito singulares auditadas por Big Four",
+  style = "aer",
+  decimal.mark = ".",
+  digits = 0
+)
+```
+
+Comparando das duas tabelas é possível observar que a quantidade de cooperativas de crédito auditada por *Big Four* é menor que as não auditadas, sendo 27% auditada e 70% não auditada por *Big Four*. Ainda, é possível observar que cooperativas auditadas por *Big Four* possuem idade média mais baixa, mas tamanho médio mais elevado em todas as variáveis.
+
+Todas estas variáveis apresentaram diferenças estatísticamente significantes entre os grupos, ou seja, os dois grupos apresentam características distintas quanto a idade e tamanho.
+
+### Metodologia
+
+O primeiro passo foi corrigir o problema de tamanho das cooperativas notado pelos valores dos desvios da média, todas as variáveis financeiras (Ativo Total, Patrimônio Líquido, Despesas, Receitas, Sobreas e PECLD) através da normalização por escalas em torno da média, com a fórmula: (valor - min (valor)) / (máx(valor) - min(valor)). Não foram normalizadas por logaritmo por algumas varáveis possuírem valores negativos, que me fizeram optar por utilizar a mesma metodologia de normalização.
+
+Este método também resolve problemas de distribuição das variáveis.
+
+```{r}
+# Regressão logit
+
+modelo.coop <- coop |>
+  dplyr::mutate(
+    escala_ativo_total = scale(ativo_total),
+    escala_patrimonio_liquido = scale(patrimonio_liquido),
+    escala_despesas_operacionais = scale(despesas_operacionais),
+    escala_receitas_operacionais = scale(receitas_operacionais),
+    escala_sobras = scale(sobras),
+    escala_pecld = scale(pecld),
+    filiacao =  dplyr::case_when(filiacao != 0 ~ 1,
+                                 filiacao == 0 ~ 0)
+  ) |>
+  dplyr::select(
+    big_four, idade_em_2022, numero_agencias, total_de_cooperados,
+    escala_ativo_total, escala_patrimonio_liquido, escala_despesas_operacionais,
+    escala_receitas_operacionais, escala_sobras, escala_pecld, filiacao
+  ) 
+```
+
+Definida a mostra e os grupos a serem classificados, o modelo econométrico escolhido foi o Logit, que conforme @hair2005, é útil para situações nas quais se deseja predizer a presença ou ausência de uma característica baseado em valores das variáveis independentes. Pode ser utilizada, por exemplo, para se mensurar a probabilidade do risco de crédito em situações de operação de vendas a prazo, empréstimos ou financiamentos. A probabilidade máxima pode ser estimada pela logit, após a transformação da variável dependente em variável de base logarítmica, permitindo que seja calculada a probabilidade de um certo evento acontecer.
+
+Uma vantagem é a maior flexibilidade em seus pressupostos em relação a outras técnicas (como análise discriminante), como no caso de não precisar se preocupar com homogeneidade de variância e normalidade dos resíduos. Embora o resíduo também precise ter média zero, ausência de autocorrelação, correlação entre resíduos e variáveis explicativas e multicolinearidade.
+
+```{r}
+log.audit <-
+  modelo.coop |>
+  glm(big_four ~ .,
+    data = _,
+    family = binomial
+  )
+```
+
+Lembrando que, de acordo com @favero2017, a regressão logística binária estima, por máxima verossimilhança, não são os valores previstos da variável dependente, mas, sim, a probabilidade de ocorrência do evento em estudo para cada observação. No caso, a probabilidade de uma cooperativa de crédito ser auditada por uma *Big Four*.
+
+A fórmula do modelo será:
+
+$$ 
+BigFour = \alpha + \beta_{1}Idade + \beta_{2}NumeroAgencias + \beta_{3}TotalCooperados + \beta_{4} AtivoTotal + \beta_{5}PatrimonioLiquido  + $$$$ \beta_{6}Despesas + \beta_{7}Receitas + \beta_{8}Sobras + \beta_{9}PECLD + \beta_{10}Filiacao
+$$
+
+Após a estimação do modelo Logit, serão realizados os testes para verificar o nível de eficiência do modelo. Estes testes serão McFadden, para encontrarmos o chamado pseudo $R^{2}$, a matriz de confusão para verificarmos os níveis de acerto do modelo e a curva ROC para verificarmos o desempenho do modelo.
+
+De acordo com @favero2017, como a variável dependente é qualitativa, não faz sentido discutirmos o percentual de sua variância que é explicado pelas variáveis preditoras, ou seja, em modelos de regressão logística não há um coeficiente de ajuste $R^{2}$ , como nos modelos tradicionais de regressão estimados pelo método de mínimos quadrados ordinários. Então é realizado o teste do pseudo $R^{2}$ proposto por @mcfadden1975 que indica uma relação entre a probabilidade e $R$, baseado na verossimilhança. Já a matriz de confusão nos mostra porcentagem de acertos do modelo, chamado de acurácia.
+
+Por fim, será feita a análise da curva ROC, que é utilizada para categorizar uma variável numérica X em relação a uma variável categórica Y. A área abaixo da curva representa a probabilidade de que a curva ROC irá classificar a cooperativa corretamente. Ela varia de 0 a 1, sendo que 0.5 representa um modelo que seria completamente aleatório. Quanto mais próximo de 1, e consequentemente longe de 0.5, melhor o ajuste da curva ROC.
+
+## Resultados
+
+Os resultados da estimação do modelo Logit binomial pode ser observado abaixo:
+
+```{r}
+# Descricao dos resultados
+summary(log.audit)
+```
+
+É possível observar que o modelo classificou a probabilidade da cooperativa de crédito optar por ser auditada por empresa comum. Com estes dados, a única váriavel capaz de explicar a adoção da auditoria por comum com intervalo de confiança de 99% é a filiação. A variável idade explica a adoção em 95% e as variáveis número de agência, ativo total e sobras (que são relativas ao tamanho) explicam o modelo a 90%. As demais variáveis não possuem efeito significativo na classificação.
+
+A ordem de importância das variáveis para o resultado do modelo, independente se afeta positiva ou negativamente, é dada por:
+
+```{r}
+# Importância de cada variável
+caret::varImp(log.audit) |> dplyr::arrange(-Overall)
+```
+
+Em resumo: quando a empresa é filiada a uma cooperativa central e quanto mais velha, quanto maior for o ativo total, quanto mais agências esobras, maior as chances da cooperativa optar por ser auditada por uma empresa *Big Four*.
+
+```{r}
+DescTools::PseudoR2(log.audit)
+```
+
+Além destes resultados, o pseudo $R^{2}$ foi de 0,403, o que indicaria um poder explicativo muito bom para o modelo [@mcfadden1975] por estar entre 0,2 e 0,4.
+
+Quando aplicamos a matriz de confusão para contar nos níveis de acertos, temos um bom resultado.
+
+```{r}
+# Matriz de Confusão
+glm.auditprob <- predict(log.audit, type = "response")
+glm.auditpreb <- ifelse(glm.auditprob > 0.5, "Big Four", "Comum") 
+audit <- ifelse(modelo.coop$big_four > 0.5, "Big Four", "Comum")
+cm.audit <- table(glm.auditpreb, audit)
+caret::confusionMatrix(cm.audit)
+```
+
+A matriz de confusão apresentada indica que o modelo tem acurácia de 81% e um p-valor abaixo de 0,05, indicando rubustez. Nesta matriz também é possível observar que o modelo previu corretamente 91% das cooperativas auditadas por empresa comum e apenas 53% das cooperativas auditadas por *Big Four*.
+
+```{r}
+# Curva ROC
+roc.audit <- pROC::roc(audit, glm.auditprob)
+roc.audit 
+pROC::plot.roc(roc.audit) 
+```
+
+Quando plotamos a curva ROC temos que o modelo atingiu um nível satisfatório de classificação, sob 89%, bem próximo de 1. Com isso, podemos concluir que o modelo utilizado pode ser utilizado para prever as chances de uma cooperativa de crédito ser auditada por uma empresa *Big Four* ou não.
+
+## Conclusão
+
+Podemos concluir que apesar da importância de uma auditoria ser realizada por uma empresa com maior credibilidade no mercado, poucas cooperativas optam por contratar uma *Big Four*. Possivelmente, isso acontece devido a falta de mercado monitorando as cooperativas de crédito, uma vez que suas quotas não podem ser negociadas por terceiros.
+
+Um fato interessante é que as chances de uma cooperativa ser aditada por *Big Four* aumentam quando ela está filiada a um sistema. Uma possível explicação para isso é que o sistema exige um nível maior de confiança nos relatórios contábeis para que a cooperativa possa fazer parte. Ainda, o estudo mostra que o tamanho e a idade podem justificar a escolha. Para estudos futuros, sugere-se utilizar outros métodos ou períodos maiores de análise, assim como inclusão de variáveis como tipo de cooperado ou região.
+
+## Nota
+
+Quando tentei normalizar as variáveis contábeis por `log()`, tratando as variáveis negativas como log(var - min(var)), elas perderam o poder explicativo. Entretanto, o poder de explicação do modelo aumentou, fazendo com que apenas idade, quantidade de agencias e filiacao fossem significantes para classificar uma cooperativa como sendo auditada por *Big Four* ou não. Isso melhorou a capacidade de previsão do modelo de 89% para 91%.
+
+## Referências
